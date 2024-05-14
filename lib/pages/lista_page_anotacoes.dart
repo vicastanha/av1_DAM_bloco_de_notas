@@ -1,5 +1,6 @@
 import 'package:bloco_de_notas/dao/anotacao_dao.dart';
 import 'package:bloco_de_notas/model/anotacao.dart';
+import 'package:bloco_de_notas/pages/detalhe_anotaocao_page.dart';
 import 'package:bloco_de_notas/widgets/conteudo_form_dialog.dart';
 import 'package:flutter/material.dart';
 
@@ -14,8 +15,11 @@ class _ListaAnotacaoPageState extends State <ListaAnotacaoPage>{
   final _anotacoes = <Anotacao>[];
   final _dao = AnotacaoDao();
 
+  var _carregando = false;
+
   static const ACAO_EDITAR = 'editar';
   static const ACAO_EXCLUIR = 'excluir';
+  static const ACAO_VISUALIZAR = 'visualizar';
 
   @override
   void initstate(){
@@ -31,7 +35,7 @@ class _ListaAnotacaoPageState extends State <ListaAnotacaoPage>{
       floatingActionButton: FloatingActionButton(
           onPressed: _abrirForm,
           child: Icon(Icons.add),
-          tooltip: 'Nova Anotacao'
+          tooltip: 'Nova Anotação'
       ),
     );
   }
@@ -42,32 +46,63 @@ class _ListaAnotacaoPageState extends State <ListaAnotacaoPage>{
       centerTitle: false,
     );
   }
+
   Widget _criarBody(){
+    if(_carregando){
+      return const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Align(
+            alignment: AlignmentDirectional.center,
+            child: CircularProgressIndicator(),
+          ),
+          Align(
+            alignment: AlignmentDirectional.center,
+            child: Padding(
+              padding: EdgeInsets.only(top: 10),
+              child: Text('Carregando suas Anotações!',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          )
+        ],
+      );
+    }
+
     if(_anotacoes.isEmpty){
-      return const Center(
-        child: Text('Sem anotações, adicione uma agora!',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),),
+      return  const Center(
+        child: Text('Tudo certo por aqui!!!',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
       );
     }
     return ListView.separated(
       itemBuilder: (BuildContext context, int index){
-        final anotacao = _anotacoes [index];
-        return PopupMenuButton <String>(
+        final anotacao = _anotacoes[index];
+        return PopupMenuButton<String>(
           child: ListTile(
-            title: Text('${anotacao.id} - ${anotacao.titulo}'),
-            subtitle: Text('${anotacao.descricao}'),
+            title: Text('${anotacao.id} - ${anotacao.titulo}'
+            ),
+            subtitle: Text('${anotacao.descricao}'
+            ),
           ),
           itemBuilder: (BuildContext context) => criarItensMenuPopUp(),
           onSelected: (String valorSelecionado){
-            if(valorSelecionado == ACAO_EDITAR){
+            if (valorSelecionado == ACAO_EDITAR){
               _abrirForm(anotacaoAtual: anotacao);
-            }else{
+            }else if (valorSelecionado == ACAO_EXCLUIR){
               _excluir(anotacao);
+            }else{
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => DetalheAnotacaoPage(anotacao: anotacao)));
             }
           },
         );
       },
-      separatorBuilder: (BuildContext context, index)=> Divider(),
+      separatorBuilder: (BuildContext context, int index) => const Divider(),
       itemCount: _anotacoes.length,
     );
   }

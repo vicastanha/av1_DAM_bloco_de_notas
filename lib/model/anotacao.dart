@@ -1,4 +1,3 @@
-import 'package:bloco_de_notas/model/anotacao.dart';
 import 'package:intl/intl.dart';
 
 class Anotacao{
