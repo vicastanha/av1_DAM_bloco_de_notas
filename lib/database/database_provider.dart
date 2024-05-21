@@ -1,11 +1,10 @@
 
 import 'package:bloco_de_notas/model/anotacao.dart';
-import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 
 class DatabaseProvider{
-  static const _dbName = "cadastro_Anotacoes.db";
-  static const _dbVersion = 2;
+  static const _dbName = 'cadastro_anotacoes.db';
+  static const _dbVersion = 1;
 
   DatabaseProvider._init();
   static final DatabaseProvider instance = DatabaseProvider._init();
@@ -27,31 +26,35 @@ class DatabaseProvider{
       version: _dbVersion,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
+
     );
   }
 
-  Future<void> _onCreate(Database db, int version) async{
+  Future<void> _onCreate(Database db, int version) async {
     await db.execute(
         '''
-      CREATE TABLE ${Anotacao.nome_tabela}(
+      CREATE TABLE ${Anotacao.nome_tabela} (
       ${Anotacao.campo_id} INTEGER PRIMARY KEY AUTOINCREMENT,
       ${Anotacao.campo_titulo} TEXT NOT NULL,
-      ${Anotacao.campo_descricao} TEXT NOT NULL 
+      ${Anotacao.campo_descricao} TEXT NOT NULL
       );
       '''
     );
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async{
+    switch(oldVersion){
+      case 1:
+        await db.execute('''
+        ALTER TABLE ${Anotacao.nome_tabela}
+        ADD ${Anotacao.campo_titulo} TEXT NOT NULL
+        ''');
+    }
   }
 
-  //Função pra quando fechar o app fechar o banco
-  Future <void> close() async{
-    if(_database != null) {
+  Future<void> close() async{
+    if(_database != null){
       await _database!.close();
     }
-
   }
-
-
 }

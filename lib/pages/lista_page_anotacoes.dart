@@ -1,30 +1,55 @@
+
 import 'package:bloco_de_notas/dao/anotacao_dao.dart';
 import 'package:bloco_de_notas/model/anotacao.dart';
 import 'package:bloco_de_notas/pages/detalhe_anotaocao_page.dart';
+import 'package:bloco_de_notas/pages/filtros_page.dart';
 import 'package:bloco_de_notas/widgets/conteudo_form_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class  ListaAnotacaoPage extends  StatefulWidget{
+class ListaAnotacaoPage extends StatefulWidget{
 
   @override
   _ListaAnotacaoPageState createState() => _ListaAnotacaoPageState();
 }
 
-class _ListaAnotacaoPageState extends State <ListaAnotacaoPage>{
+class _ListaAnotacaoPageState extends State<ListaAnotacaoPage>{
 
-  final _anotacoes = <Anotacao>[];
+  final _anotacoes = <Anotacao> [];
   final _dao = AnotacaoDao();
 
-  var _carregando = false;
 
   static const ACAO_EDITAR = 'editar';
   static const ACAO_EXCLUIR = 'excluir';
   static const ACAO_VISUALIZAR = 'visualizar';
 
   @override
-  void initstate(){
+  void initState(){
     super.initState();
     _atualizarLista();
+  }
+
+  void _atualizarLista () async{
+    setState(() {
+
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    final _campoOrdenacao = prefs.getString(FiltroPage.CHAVE_CAMPO_ORDENACAO) ?? Anotacao.campo_id;
+    final _usarOrdemDecrescente = prefs.getBool(FiltroPage.CHAVE_ORDENAR_DECRESCENTE) == true;
+    final  _filtroDescricao = prefs.getString(FiltroPage.CHAVE_FILTRO_DESCRICAO) ?? '';
+
+    final anotacoes = await _dao.Lista(
+      filtro: _filtroDescricao,
+      campoOrdenacao: _campoOrdenacao,
+      usarOrdemDecrescente: _usarOrdemDecrescente,
+    );
+    setState(() {
+      _anotacoes.clear();
+      if(anotacoes.isNotEmpty){
+        _anotacoes.addAll(anotacoes);
+      }
+    });
   }
 
   @override
@@ -33,48 +58,32 @@ class _ListaAnotacaoPageState extends State <ListaAnotacaoPage>{
       appBar: _criarAppBar(context),
       body: _criarBody(),
       floatingActionButton: FloatingActionButton(
-          onPressed: _abrirForm,
-          child: Icon(Icons.add),
-          tooltip: 'Nova Anotação'
+        onPressed: _abrirForm,
+        child: Icon(Icons.add),
+        tooltip: 'Nova Anotação',
       ),
     );
   }
+
   AppBar _criarAppBar(BuildContext context){
     return AppBar(
       backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       title: Text('Anotações'),
       centerTitle: false,
+      actions: [
+        IconButton(
+          onPressed: _abrirFiltro,
+          icon: const Icon(Icons.filter_list),
+        )
+      ],
     );
   }
 
   Widget _criarBody(){
-    if(_carregando){
-      return const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Align(
-            alignment: AlignmentDirectional.center,
-            child: CircularProgressIndicator(),
-          ),
-          Align(
-            alignment: AlignmentDirectional.center,
-            child: Padding(
-              padding: EdgeInsets.only(top: 10),
-              child: Text('Carregando suas Anotações!',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          )
-        ],
-      );
-    }
 
     if(_anotacoes.isEmpty){
       return  const Center(
-        child: Text('Tudo certo por aqui!!!',
+        child: Text('Tudo ok por aqui!!!',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
       );
@@ -84,9 +93,9 @@ class _ListaAnotacaoPageState extends State <ListaAnotacaoPage>{
         final anotacao = _anotacoes[index];
         return PopupMenuButton<String>(
           child: ListTile(
-            title: Text('${anotacao.id} - ${anotacao.titulo}'
+            title: Text('${anotacao.id} - ${anotacao.titulo}',
             ),
-            subtitle: Text('${anotacao.descricao}'
+            subtitle: Text(anotacao.descricao,
             ),
           ),
           itemBuilder: (BuildContext context) => criarItensMenuPopUp(),
@@ -99,6 +108,7 @@ class _ListaAnotacaoPageState extends State <ListaAnotacaoPage>{
               Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => DetalheAnotacaoPage(anotacao: anotacao)));
             }
+            _dao.salvar(anotacao);
           },
         );
       },
@@ -107,8 +117,29 @@ class _ListaAnotacaoPageState extends State <ListaAnotacaoPage>{
     );
   }
 
-  List <PopupMenuEntry<String>> criarItensMenuPopUp(){
-    return[
+  void _abrirFiltro(){
+    final navigator = Navigator.of(context);
+    navigator.pushNamed(FiltroPage.ROUTE_NAME).then((alterouValor) {
+      if(alterouValor == true){
+        _atualizarLista();
+      }
+    });
+  }
+
+  List<PopupMenuEntry<String>> criarItensMenuPopUp(){
+    return [
+      const PopupMenuItem(
+          value: ACAO_VISUALIZAR,
+          child: Row(
+            children: [
+              Icon(Icons.info, color: Colors.blue),
+              Padding(
+                padding: EdgeInsets.only(left: 10),
+                child: Text('Visualizar'),
+              )
+            ],
+          )
+      ),
       const PopupMenuItem(
           value: ACAO_EDITAR,
           child: Row(
@@ -140,7 +171,7 @@ class _ListaAnotacaoPageState extends State <ListaAnotacaoPage>{
     return showDialog(
         context: context,
         builder: (BuildContext context){
-          return AlertDialog(
+          return  AlertDialog(
             title: const Row(
               children: [
                 Icon(Icons.warning, color: Colors.red,),
@@ -150,76 +181,67 @@ class _ListaAnotacaoPageState extends State <ListaAnotacaoPage>{
                 )
               ],
             ),
-            content: const Text('Tem certeza que deseja excluir esta anotação permanentemente?'),
+            content: const Text('Esse registro será deletado definitivamente!'),
             actions: [
               TextButton(
                   onPressed: () => Navigator.of(context).pop(),
                   child: const Text('Cancelar')
               ),
               TextButton(
-                  onPressed: (){
+                  onPressed: () {
                     Navigator.of(context).pop();
                     if (anotacao.id == null){
                       return;
                     }
-                    _dao.remover(anotacao.id!).then((success){
+                    _dao.remover(anotacao.id!).then((success) {
                       if(success){
                         _atualizarLista();
                       }
                     });
                   },
-                  child: const Text ('OK')
+                  child: Text('Ok')
               ),
             ],
           );
         }
     );
+
   }
 
-  void _abrirForm ({Anotacao? anotacaoAtual}){
-    final key = GlobalKey <ConteudoFormDialogState>();
+  void _abrirForm({Anotacao? anotacaoAtual}){
+    final key = GlobalKey<ConteudoFormDialogState>();
     showDialog(
         context: context,
         builder: (BuildContext context){
           return AlertDialog(
-            title: Text(anotacaoAtual == null ? 'Nova Anotação' : 'Alterar Anotação? ${anotacaoAtual.id}'),
+            title: Text(anotacaoAtual == null ? 'Nova anotação' :
+            'Alterar Anotação ${anotacaoAtual.id}'),
             content: ConteudoFormDialog(key: key, anotacaoAtual: anotacaoAtual),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
+                child: Text('Cancelar'),
               ),
               TextButton(
-                  onPressed: (){
-                    if(key.currentState!.dadosValidados() && key.currentState != null){
-                      setState(() {
-                        final novaAnotacao = key.currentState!.novaAnotacao;
-                        _dao.salvar(novaAnotacao).then((success){
-                          if (success){
-                            _atualizarLista();
-                          }
-                        });
+                onPressed: () {
+                  if (key.currentState!.dadosValidados() &&
+                      key.currentState != null){
+                    setState(() {
+                      final novaAnotacao = key.currentState!.novaAnotacao;
+                      _dao.salvar(novaAnotacao).then((success) {
+                        if(success){
+                          _atualizarLista();
+                        }
                       });
-                      Navigator.of(context).pop();
-                    }
-                  },
-                  child: Text('Salvar')
-              ),
+                    });
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: Text('Salvar'),
+              )
             ],
           );
         }
     );
   }
-
-  void _atualizarLista () async{
-    final anotacoes = await _dao.Lista();
-    setState(() {
-      _anotacoes.clear();
-      if(anotacoes.isNotEmpty){
-        _anotacoes.addAll(anotacoes);
-      }
-    });
-
-  }
-
 }

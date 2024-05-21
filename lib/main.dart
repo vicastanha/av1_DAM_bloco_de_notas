@@ -1,3 +1,4 @@
+import 'package:bloco_de_notas/pages/filtros_page.dart';
 import 'package:flutter/material.dart';
 import 'package:bloco_de_notas/pages/lista_page_anotacoes.dart';
 
@@ -20,7 +21,10 @@ class MyApp extends StatelessWidget {
         primaryColor: Colors.black,
         useMaterial3: true,
       ),
-      home: ListaAnotacaoPage ()
+      home: ListaAnotacaoPage (),
+      routes: {
+        FiltroPage.ROUTE_NAME: (BuildContext context) => FiltroPage(),
+      },
     );
   }
 }

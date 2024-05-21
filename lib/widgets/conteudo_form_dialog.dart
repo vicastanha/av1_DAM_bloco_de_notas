@@ -1,15 +1,18 @@
-import 'package:bloco_de_notas/model/anotacao.dart';
+
+import 'package:bloco_de_notas/widgets/conteudo_form_dialog.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
+import '../model/anotacao.dart';
 
 class ConteudoFormDialog extends StatefulWidget{
   final Anotacao? anotacaoAtual;
 
-  ConteudoFormDialog({Key? key, this.anotacaoAtual}) : super(key:key);
+  ConteudoFormDialog({ Key? key, this.anotacaoAtual}) : super(key: key);
 
   @override
   ConteudoFormDialogState createState() => ConteudoFormDialogState();
-
 }
 
 class ConteudoFormDialogState extends State<ConteudoFormDialog>{
@@ -35,26 +38,27 @@ class ConteudoFormDialogState extends State<ConteudoFormDialog>{
           mainAxisSize: MainAxisSize.min,
           children: [
             TextFormField(
-              controller:  tituloController,
-              decoration: const InputDecoration(labelText: 'Título'),
-              validator: (String? valor) {
-                if (valor == null || valor.isEmpty) {
-                  return 'Informe o Título!';
+              controller: tituloController,
+              decoration: InputDecoration(labelText: 'Título'),
+              validator: (String? valor){
+                if (valor == null || valor.isEmpty){
+                  return 'Informe o título!';
                 }
                 return null;
               },
             ),
             TextFormField(
               controller: descricaoController,
-              decoration: const InputDecoration(labelText: 'Descrição'),
-              validator: (String? valor) {
-                if (valor == null || valor.isEmpty) {
-                  return 'Informe a Descrição da sua Anotação!';
+              decoration: InputDecoration(labelText: 'Descrição'),
+              validator: (String? valor){
+                if (valor == null || valor.isEmpty){
+                  return 'Informe a descrição!';
                 }
                 return null;
               },
             ),
           ],
+
         )
     );
   }
@@ -63,9 +67,9 @@ class ConteudoFormDialogState extends State<ConteudoFormDialog>{
   bool dadosValidados() => formKey.currentState?.validate() == true;
 
   Anotacao get novaAnotacao => Anotacao(
-    id: widget.anotacaoAtual?.id ?? 0,
+    id: widget.anotacaoAtual?.id ?? null,
     titulo: tituloController.text,
-      descricao: descricaoController.text,
-  );
+    descricao: descricaoController.text
 
+  );
 }
